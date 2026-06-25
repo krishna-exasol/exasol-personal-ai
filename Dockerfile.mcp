@@ -1,0 +1,12 @@
+FROM python:3.12-slim
+
+ARG EXASOL_MCP_SERVER_VERSION=1.10.1
+
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir "exasol-mcp-server==${EXASOL_MCP_SERVER_VERSION}"
+
+EXPOSE 4896
+
+# --no-auth keeps the local MCP endpoint open for local LLM clients.
+# It binds 0.0.0.0 inside the container; compose only publishes it on 127.0.0.1.
+CMD ["exasol-mcp-server-http", "--host", "0.0.0.0", "--port", "4896", "--no-auth"]

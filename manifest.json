@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "bundleVersion": "0.1.0-mvp",
+  "platform": "macOS (Apple Silicon) for the local database; cross-platform for the companion containers",
+  "database": {
+    "source": "exasol-personal launcher (host)",
+    "command": "exasol install local",
+    "repository": "https://github.com/exasol/exasol-personal",
+    "note": "The DB runs on the host via the Personal launcher; it is NOT a container in this stack. The companion containers connect to it via host.docker.internal."
+  },
+  "jsonTables": {
+    "repository": "https://github.com/exasol-labs/exasol-json-tables.git",
+    "ref": "main",
+    "pinBeforeRelease": "Replace main with a tested tag or commit."
+  },
+  "mcpServer": {
+    "package": "exasol-mcp-server",
+    "version": "1.10.1"
+  },
+  "ports": {
+    "mcp": 4896,
+    "db": "discovered at install time via `exasol info --json` (dynamic)"
+  }
+}

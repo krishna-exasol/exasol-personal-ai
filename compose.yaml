@@ -1,0 +1,57 @@
+services:
+  # ---------------------------------------------------------------------------
+  # NOTE: there is deliberately NO database service here.
+  # The Exasol database is provided on the HOST by the Exasol Personal launcher
+  # (`exasol install local`). These containers connect OUT to that host DB via
+  # `host.docker.internal:<dbPort>`. The installer discovers the port/credentials
+  # with `exasol info --json` and writes them into .env.
+  # ---------------------------------------------------------------------------
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+      args:
+        EXASOL_MCP_SERVER_VERSION: ${EXASOL_MCP_SERVER_VERSION:-1.10.1}
+    container_name: exasol-personal-ai-mcp
+    ports:
+      - "127.0.0.1:${EXASOL_MCP_PORT:-4896}:4896"
+    extra_hosts:
+      # Lets `host.docker.internal` resolve to the host on Linux engines too.
+      # On Docker Desktop (macOS/Windows) it already resolves natively.
+      - "host.docker.internal:host-gateway"
+    environment:
+      EXA_DSN: ${EXA_DB_HOST:-host.docker.internal}:${EXA_DB_PORT:-8563}
+      EXA_USER: ${EXA_USER:-sys}
+      EXA_PASSWORD: ${EXA_PASSWORD:-exasol}
+      EXA_SSL_CERT_VALIDATION: "false"
+      EXA_MCP_SETTINGS: /config/mcp-settings.json
+      EXA_MCP_LOG_LEVEL: INFO
+      EXA_MCP_LOG_TO_CONSOLE: "true"
+    volumes:
+      - ./mcp-settings.json:/config/mcp-settings.json:ro
+    restart: unless-stopped
+
+  json-tables:
+    build:
+      context: .
+      dockerfile: Dockerfile.json-tables
+      args:
+        EXASOL_JSON_TABLES_REPOSITORY: ${EXASOL_JSON_TABLES_REPOSITORY:-https://github.com/exasol-labs/exasol-json-tables.git}
+        EXASOL_JSON_TABLES_REF: ${EXASOL_JSON_TABLES_REF:-main}
+    container_name: exasol-personal-ai-json-tables
+    working_dir: /workspace
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # JSON Tables is a CLI tool with no long-running server. Keep the container
+    # standing with a keep-alive and invoke the CLI on demand via:
+    #   docker compose exec json-tables exasol-json-tables ...
+    # (the generated run-json-tables.sh helper wraps this with the right flags).
+    entrypoint: ["sleep", "infinity"]
+    restart: unless-stopped
+    environment:
+      EXASOL_DSN: ${EXA_DB_HOST:-host.docker.internal}:${EXA_DB_PORT:-8563}
+      EXASOL_USER: ${EXA_USER:-sys}
+      EXASOL_PASSWORD: ${EXA_PASSWORD:-exasol}
+    volumes:
+      - ./workspace:/workspace

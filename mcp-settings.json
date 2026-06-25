@@ -1,0 +1,11 @@
+{
+  "enable_read_query": true,
+  "enable_write_query": false,
+  "enable_summarize_table": false,
+  "enable_query_profiling": false,
+  "enable_read_bucketfs": false,
+  "enable_write_bucketfs": false,
+  "views": {
+    "enable": true
+  }
+}
