@@ -67,6 +67,18 @@
   .steps li:before{counter-increment:s;content:counter(s);position:absolute;left:0;top:9px;width:30px;height:30px;border-radius:50%;background:var(--panel2);border:1px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
   .steps li b{color:var(--ink)}
   footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+
+  .install{margin:28px 0 8px;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+  .install .lbl{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+  .install .lbl .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+  .install .cmd{display:flex;align-items:center;gap:14px;padding:16px}
+  .install .cmd .prompt{color:var(--green);font-family:var(--mono);font-weight:700;user-select:none}
+  .install code.line{flex:1;font-family:var(--mono);font-size:14px;color:var(--ink);background:none;border:none;padding:0;white-space:nowrap;overflow-x:auto}
+  .install .copy{flex:none;background:var(--panel2);border:1px solid var(--line);color:var(--mut);border-radius:7px;padding:7px 12px;font-size:12px;font-family:var(--sans);cursor:pointer;transition:all .15s}
+  .install .copy:hover{color:var(--ink);border-color:var(--cyan)}
+  .install .copy.done{color:var(--green);border-color:var(--green)}
+  .install .req{padding:0 16px 14px;font-size:12.5px;color:var(--dim)}
+  @media(max-width:620px){.install code.line{font-size:12px}}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
   @media(max-width:720px){.two{grid-template-columns:1fr}}
 </style>
@@ -85,6 +97,16 @@
     <span class="pill"><b>Status</b> MVP</span>
   </div>
 </header>
+
+<div class="install">
+  <div class="lbl"><span class="dot"></span> Install — one command &nbsp;·&nbsp; macOS (Apple Silicon)</div>
+  <div class="cmd">
+    <span class="prompt">$</span>
+    <code class="line" id="installcmd">curl -fsSL https://raw.githubusercontent.com/krishna-exasol/exasol-personal-ai/main/install.sh | sh</code>
+    <button class="copy" id="copybtn" onclick="copyInstall()">Copy</button>
+  </div>
+  <div class="req">Requires Docker Desktop running. First run installs the <code>exasol</code> launcher and the local database (10–20 min).</div>
+</div>
 
 <p class="lead">This bundle brings together three official Exasol components behind a single
 <code>install.sh</code>. The twist: <b>Exasol Personal is a launcher, not a Docker image</b> — so the
@@ -248,5 +270,18 @@ exasol info               <span class="c"># note host + dbPort</span>
 </footer>
 
 </div>
+<script>
+  function copyInstall(){
+    var txt=document.getElementById('installcmd').textContent.trim();
+    var btn=document.getElementById('copybtn');
+    var done=function(){btn.textContent='Copied';btn.classList.add('done');setTimeout(function(){btn.textContent='Copy';btn.classList.remove('done');},1800);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){fallback(txt,done);});}
+    else{fallback(txt,done);}
+  }
+  function fallback(txt,done){
+    var t=document.createElement('textarea');t.value=txt;t.style.position='fixed';t.style.opacity='0';
+    document.body.appendChild(t);t.select();try{document.execCommand('copy');done();}catch(e){}document.body.removeChild(t);
+  }
+</script>
 </body>
 </html>
