@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exasol Personal AI — Architecture</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --line:#2d3441;
+    --ink:#e6edf3; --mut:#9aa7b4; --dim:#6e7b8a;
+    --green:#3fb950; --cyan:#39c5cf; --yellow:#d29922; --blue:#58a6ff; --purple:#bc8cff; --red:#f85149;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;font-size:16px}
+  .wrap{max-width:1040px;margin:0 auto;padding:48px 24px 96px}
+  header{border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:40px}
+  h1{font-size:34px;margin:0 0 8px;letter-spacing:-.5px}
+  h1 .accent{color:var(--cyan)}
+  .sub{color:var(--mut);font-size:18px;margin:0}
+  .pills{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .pill{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:13px;color:var(--mut)}
+  .pill b{color:var(--ink);font-weight:600}
+  h2{font-size:23px;margin:48px 0 14px;padding-top:8px;border-top:1px solid var(--line);letter-spacing:-.3px}
+  h2:first-of-type{border-top:none}
+  h3{font-size:17px;margin:26px 0 8px;color:var(--ink)}
+  p{color:var(--ink)}
+  .lead{color:var(--mut);font-size:17px}
+  code{font-family:var(--mono);background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:.86em;color:var(--blue)}
+  a{color:var(--cyan);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .diagram{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px;margin:24px 0;overflow-x:auto}
+  .host{border:1.5px dashed var(--dim);border-radius:12px;padding:20px;position:relative}
+  .host-tag{position:absolute;top:-11px;left:18px;background:var(--bg);padding:0 10px;font-size:12px;color:var(--mut);letter-spacing:.5px;text-transform:uppercase}
+  .row{display:flex;gap:18px;flex-wrap:wrap;align-items:stretch}
+  .box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;flex:1;min-width:200px}
+  .box .ttl{font-weight:600;font-size:15px;margin-bottom:4px}
+  .box .meta{font-family:var(--mono);font-size:12px;color:var(--mut);word-break:break-all}
+  .box.db{border-color:var(--green)} .box.db .ttl{color:var(--green)}
+  .box.mcp{border-color:var(--blue)} .box.mcp .ttl{color:var(--blue)}
+  .box.jt{border-color:var(--purple)} .box.jt .ttl{color:var(--purple)}
+  .box.launch{border-color:var(--cyan)} .box.launch .ttl{color:var(--cyan)}
+  .docker{border:1.5px solid var(--line);border-radius:12px;padding:18px 16px 16px;margin-top:22px;position:relative;background:rgba(88,166,255,.04)}
+  .docker-tag{position:absolute;top:-11px;left:18px;background:var(--bg);padding:0 10px;font-size:12px;color:var(--blue);letter-spacing:.5px;text-transform:uppercase}
+  .flowline{text-align:center;color:var(--dim);font-family:var(--mono);font-size:12px;margin:10px 0}
+  .conn{font-family:var(--mono);font-size:12px;color:var(--green);text-align:center;margin:14px 0 2px}
+
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14.5px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.4px}
+  td code{font-size:.85em}
+
+  .callout{border-radius:10px;padding:16px 18px;margin:22px 0;border:1px solid var(--line);background:var(--panel)}
+  .callout.warn{border-left:4px solid var(--yellow)}
+  .callout.info{border-left:4px solid var(--blue)}
+  .callout.good{border-left:4px solid var(--green)}
+  .callout .h{font-weight:700;margin-bottom:4px}
+  .callout.warn .h{color:var(--yellow)} .callout.info .h{color:var(--blue)} .callout.good .h{color:var(--green)}
+
+  pre{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.55;color:var(--ink)}
+  pre .c{color:var(--dim)} pre .k{color:var(--purple)} pre .s{color:var(--green)}
+  ol li,ul li{margin:6px 0}
+  .steps{counter-reset:s;list-style:none;padding:0}
+  .steps li{position:relative;padding:10px 0 10px 46px;border-bottom:1px solid var(--line)}
+  .steps li:before{counter-increment:s;content:counter(s);position:absolute;left:0;top:9px;width:30px;height:30px;border-radius:50%;background:var(--panel2);border:1px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .steps li b{color:var(--ink)}
+  footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:720px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Exasol <span class="accent">Personal AI</span> — Architecture</h1>
+  <p class="sub">One command to run an Exasol Personal database with an MCP access layer and JSON-native SQL.</p>
+  <div class="pills">
+    <span class="pill"><b>DB</b> Exasol Personal (host)</span>
+    <span class="pill"><b>Access</b> MCP Server</span>
+    <span class="pill"><b>JSON&nbsp;SQL</b> JSON Tables</span>
+    <span class="pill"><b>Platform</b> macOS Apple&nbsp;Silicon</span>
+    <span class="pill"><b>Status</b> MVP</span>
+  </div>
+</header>
+
+<p class="lead">This bundle brings together three official Exasol components behind a single
+<code>install.sh</code>. The twist: <b>Exasol Personal is a launcher, not a Docker image</b> — so the
+database runs on the host, and only the two companion tools are containers that connect to it.</p>
+
+<h2>The big picture</h2>
+
+<div class="diagram">
+  <div class="host">
+    <span class="host-tag">macOS host</span>
+
+    <div class="row">
+      <div class="box launch">
+        <div class="ttl">exasol launcher</div>
+        <div class="meta">~/.local/bin/exasol<br>install · info · start · stop</div>
+      </div>
+      <div class="box db">
+        <div class="ttl">Exasol Personal DB</div>
+        <div class="meta">managed VM<br>127.0.0.1:&lt;dbPort&gt;<br>user sys · TLS (self-signed)</div>
+      </div>
+    </div>
+
+    <div class="flowline">▲ launcher provisions &amp; owns the database lifecycle</div>
+    <div class="conn">containers reach the DB via &nbsp;host.docker.internal:&lt;dbPort&gt;</div>
+
+    <div class="docker">
+      <span class="docker-tag">Docker Desktop</span>
+      <div class="row">
+        <div class="box mcp">
+          <div class="ttl">mcp-server</div>
+          <div class="meta">exasol-mcp-server 1.10.1<br>HTTP/MCP · 127.0.0.1:4896<br>pyexasol &gt;=1,&lt;2</div>
+        </div>
+        <div class="box jt">
+          <div class="ttl">json-tables</div>
+          <div class="meta">Python CLI + Rust engine<br>standing container · exec on demand<br>pyexasol &gt;=2.2,&lt;3</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="callout info">
+  <div class="h">Key idea</div>
+  The database is <b>not</b> a service in <code>compose.yaml</code>. The installer asks the launcher where the
+  database is (<code>exasol info --json</code>), writes that into <code>.env</code>, and the two containers connect
+  <b>outward</b> to the host via <code>host.docker.internal</code>.
+</div>
+
+<h2>Components</h2>
+<table>
+  <thead><tr><th>Component</th><th>What it is</th><th>Runs as</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b style="color:var(--green)">Exasol Personal</b></td>
+      <td>Go launcher CLI that provisions a real Exasol DB (local VM or cloud)</td>
+      <td>Host process + managed VM</td>
+      <td>Not a container image; it manages its own DB lifecycle. We consume the endpoint it produces.</td>
+    </tr>
+    <tr>
+      <td><b style="color:var(--blue)">MCP Server</b></td>
+      <td><code>exasol-mcp-server</code> pip package, HTTP mode on <code>:4896</code></td>
+      <td>Container</td>
+      <td>Clean pip install; needs only client→DB connectivity, which works fine to a host DB.</td>
+    </tr>
+    <tr>
+      <td><b style="color:var(--purple)">JSON Tables</b></td>
+      <td>Python CLI that shells out to a Rust (<code>cargo</code>) ingest engine</td>
+      <td>Container (standing; CLI <code>exec</code>'d)</td>
+      <td>Needs the repo + Rust toolchain at runtime; isolated due to a conflicting <code>pyexasol</code> pin.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout warn">
+  <div class="h">Why two containers, not one</div>
+  MCP needs <code>pyexasol&gt;=1,&lt;2</code>; JSON Tables needs <code>pyexasol&gt;=2.2,&lt;3</code>. Those can't coexist in
+  one Python environment — and the tools don't talk to each other, only to the database — so each runs isolated.
+</div>
+
+<h2>Why Personal changes the design</h2>
+<div class="two">
+  <div>
+    <h3>Nano bundle (previous)</h3>
+    <p class="lead" style="font-size:15px">Exasol <b>Nano</b> is a Docker image. All three components were containers on one Docker network; the DB was just another service, reachable by name.</p>
+  </div>
+  <div>
+    <h3>Personal bundle (this)</h3>
+    <p class="lead" style="font-size:15px">Exasol <b>Personal</b> is a launcher. Its <b>local</b> database is macOS-Apple-Silicon-only and lives in a managed VM. There is nothing to put in compose — so the DB stays on the host and the containers reach in.</p>
+  </div>
+</div>
+
+<h2>Install flow</h2>
+<ol class="steps">
+  <li><b>Check prerequisites</b> — Docker engine running; warn if the host isn't macOS/arm64.</li>
+  <li><b>Ensure the launcher</b> — install <code>exasol</code> from downloads.exasol.com if it isn't on <code>PATH</code> or in <code>~/.local/bin</code>.</li>
+  <li><b>Ensure a database</b> — if none exists, run <code>exasol install local</code> (10–20 min first time); if stopped, <code>exasol start</code>.</li>
+  <li><b>Discover the connection</b> — <code>exasol info --json</code> → host/port/user; <code>secrets.json</code> → password.</li>
+  <li><b>Stage files &amp; write <code>.env</code></b> into <code>~/.exasol-personal-ai/</code>.</li>
+  <li><b>Build &amp; start containers</b> — <code>docker compose up -d --build</code>; generate the <code>run-json-tables.sh</code> helper.</li>
+</ol>
+
+<h2>Connection discovery</h2>
+<p>The local database port is <b>dynamic</b>, so nothing is hardcoded. The installer reads:</p>
+<pre><span class="c"># host/port/user from the launcher</span>
+exasol info --json
+  <span class="c">→ connection.host, connection.dbPort, connection.username</span>
+
+<span class="c"># password from the deployment secrets</span>
+~/.exasol/personal/deployments/default/secrets.json
+  <span class="c">→ dbPassword</span></pre>
+<p>…and writes them to <code>~/.exasol-personal-ai/.env</code>, which <code>compose.yaml</code> consumes:</p>
+<pre><span class="k">EXA_DB_HOST</span>=host.docker.internal
+<span class="k">EXA_DB_PORT</span>=&lt;discovered&gt;
+<span class="k">EXA_USER</span>=sys
+<span class="k">EXA_PASSWORD</span>=&lt;discovered&gt;</pre>
+<p>TLS certificate validation is disabled for both tools because the local DB uses a self-signed certificate. Redeploying the DB changes the port — re-running <code>install.sh</code> re-discovers it and rewrites <code>.env</code>.</p>
+
+<h2>Data flow</h2>
+<table>
+  <thead><tr><th>Path</th><th>Direction</th><th>Works?</th></tr></thead>
+  <tbody>
+    <tr><td>LLM client → MCP → DB (read queries, metadata)</td><td>client → DB</td><td><b style="color:var(--green)">Yes</b></td></tr>
+    <tr><td>JSON Tables <code>wrap</code> / <code>describe</code> / query</td><td>client → DB</td><td><b style="color:var(--green)">Yes</b></td></tr>
+    <tr><td>JSON Tables <code>ingest</code> (bulk import via HTTP transport)</td><td>DB → client (reverse)</td><td><b style="color:var(--yellow)">Caveat ↓</b></td></tr>
+  </tbody>
+</table>
+
+<div class="callout warn">
+  <div class="h">The ingest caveat</div>
+  <p style="margin:.4em 0">Exasol's bulk import uses <b>HTTP transport</b>: the CLI opens a local endpoint and the
+  <b>database connects back to it</b> to pull data. With the DB on the host (in Personal's VM) and JSON Tables in a
+  container, that reverse path isn't guaranteed — so <code>ingest</code> may fail even though queries succeed.</p>
+  <p style="margin:.4em 0 0"><b>Host-mode fallback:</b> run the JSON Tables CLI directly on the Mac host, where it
+  shares <code>127.0.0.1</code> with the database:</p>
+<pre>git clone https://github.com/exasol-labs/exasol-json-tables.git
+cd exasol-json-tables &amp;&amp; python3 -m pip install -e .   <span class="c"># needs Python 3.10+ &amp; Rust</span>
+exasol-json-tables ingest-and-wrap --input data.json --name my_events \
+  --dsn 127.0.0.1:&lt;dbPort&gt; --user sys --password &lt;password&gt;</pre>
+</div>
+
+<h2>Platform &amp; the cloud path</h2>
+<p>Personal's <code>install local</code> is <b>macOS Apple Silicon only</b> (enforced by the launcher). The launcher
+itself runs cross-platform for cloud targets, so on other systems you can provision a remote DB and point the bundle at it:</p>
+<pre>exasol install aws        <span class="c"># or azure | exoscale | stackit</span>
+exasol info               <span class="c"># note host + dbPort</span>
+
+<span class="k">EXASOL_SKIP_DB_DEPLOY</span>=1 <span class="k">EXASOL_DB_HOST</span>=&lt;host&gt; <span class="k">EXASOL_DB_PORT</span>=&lt;port&gt; ./install.sh</pre>
+
+<h2>Security defaults</h2>
+<ul>
+  <li>MCP runs <b>read-only</b> (writes disabled in <code>mcp-settings.json</code>) and is published only on <code>127.0.0.1:4896</code>.</li>
+  <li><code>--no-auth</code> keeps the local MCP endpoint open for local LLM clients — do not expose the port beyond localhost.</li>
+  <li>Credentials live only in <code>~/.exasol-personal-ai/.env</code>; keep the directory private.</li>
+</ul>
+
+<footer>
+  Exasol Personal AI — development-grade MVP. Repo:
+  <a href="https://github.com/krishna-exasol/exasol-personal-ai">github.com/krishna-exasol/exasol-personal-ai</a>.
+  See <code>README</code> and <code>DESIGN.md</code> for full detail.
+</footer>
+
+</div>
+</body>
+</html>
