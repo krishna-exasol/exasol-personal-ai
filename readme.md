@@ -15,7 +15,7 @@ exasol-personal-ai-mcp           → http://127.0.0.1:4896/mcp
 exasol-personal-ai-json-tables   → CLI, commands exec'd on demand
 ```
 
-> 🗺️ Prefer a visual? Open **[architecture.html](architecture.html)** for a diagrammed walkthrough of how the pieces fit together.
+> 🗺️ Prefer a visual? Open the **[architecture walkthrough](https://krishna-exasol.github.io/exasol-personal-ai/architecture.html)** for a diagrammed view of how the pieces fit together.
 
 ---
 
