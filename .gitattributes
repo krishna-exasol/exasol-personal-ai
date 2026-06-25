@@ -1,0 +1,7 @@
+# Shell scripts must stay LF so they run on macOS/Linux even when edited on Windows.
+*.sh text eol=lf
+install.sh text eol=lf
+uninstall.sh text eol=lf
+Dockerfile* text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
